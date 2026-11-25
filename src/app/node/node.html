@@ -1,0 +1,160 @@
+<main class="page">
+  <header class="topbar">
+    <div class="brand">
+      <div>
+        <p class="eyebrow">PATHFINDING · DIJKSTRA</p>
+        <h1>Calcul de trajet</h1>
+      </div>
+    </div>
+    <div class="connection-state">
+      <span class="connection-dot" aria-hidden="true"></span>
+      <span>Mode calcul · sans robot</span>
+    </div>
+  </header>
+
+  <section class="workspace">
+    <article class="map-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">GRAPHE 4 × 3</p>
+          <h2>Carte des nœuds</h2>
+        </div>
+        <span class="map-size">4 colonnes · 3 lignes</span>
+      </div>
+
+      <div class="map" role="group" aria-label="Carte interactive, 12 nœuds">
+        @for (node of nodes; track node) {
+          <button
+            type="button"
+            class="node"
+            [class.node-on-path]="isNodeOnPath(node)"
+            [class.node-start]="node === startNode"
+            [class.node-destination]="node === destinationNode"
+            [disabled]="isCalculating"
+            [attr.aria-label]="
+              'Nœud ' +
+              node +
+              (node === startNode ? ', départ' : '') +
+              (node === destinationNode ? ', destination' : '')
+            "
+            (click)="selectNode(node)"
+          >
+            <span class="node-number">{{ node }}</span>
+            @if (node === startNode) {
+              <span class="node-label">Départ</span>
+            } @else if (node === destinationNode) {
+              <span class="node-label">Arrivée</span>
+            }
+          </button>
+        }
+      </div>
+
+      <div class="legend" aria-label="Légende">
+        <span><i class="legend-dot start"></i> Départ</span>
+        <span><i class="legend-dot destination"></i> Destination</span>
+        <span><i class="legend-dot on-path"></i> Chemin calculé</span>
+      </div>
+    </article>
+
+    <aside class="control-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">RÉSULTAT DE L’ALGORITHME</p>
+          <h2>Chemin optimal</h2>
+        </div>
+      </div>
+
+      <p class="instructions">
+        @if (startNode === null) {
+          Cliquez sur un nœud pour définir le départ, puis choisissez la destination.
+        } @else if (isCalculating) {
+          Dijkstra calcule le plus court chemin dans le backend…
+        } @else if (path !== null) {
+          Le trajet est calculé. Aucun mouvement n’est envoyé au robot.
+        } @else if (destinationNode !== null) {
+          Le calcul a échoué. Réessayez ou choisissez une autre destination.
+        } @else {
+          Choisissez un nœud de destination sur la carte.
+        }
+      </p>
+
+      <div class="route">
+        <div class="route-point">
+          <span class="route-marker start-marker"></span>
+          <div>
+            <span class="route-caption">DÉPART</span>
+            <strong>{{ startNode === null ? '—' : 'Nœud ' + startNode }}</strong>
+          </div>
+        </div>
+        <div class="route-line" aria-hidden="true"></div>
+        <div class="route-point">
+          <span class="route-marker destination-marker"></span>
+          <div>
+            <span class="route-caption">DESTINATION</span>
+            <strong>{{
+              destinationNode === null ? 'En attente' : 'Nœud ' + destinationNode
+            }}</strong>
+          </div>
+        </div>
+      </div>
+
+      @if (path !== null) {
+        <section class="result" aria-label="Résultat du calcul de chemin">
+          <div class="result-summary">
+            <strong>{{ path.length - 1 }} segment(s)</strong>
+            <span>Chemin : {{ path.join(' → ') }}</span>
+          </div>
+
+          <h3>Instructions prévues</h3>
+          @if (instructions.length === 0) {
+            <p class="no-steps">Le départ et la destination sont identiques.</p>
+          } @else {
+            <ol class="step-list">
+              @for (instruction of instructions; track instruction.from) {
+                <li>
+                  <strong>{{ instruction.from }} → {{ instruction.to }}</strong>
+                  <span
+                    >{{ turnLabel(instruction.turn) }} · direction
+                    {{ headingLabel(instruction.heading) }}</span
+                  >
+                </li>
+              }
+            </ol>
+          }
+        </section>
+      }
+
+      <div class="status" role="status" aria-live="polite">
+        @if (isCalculating) {
+          <span class="spinner" aria-hidden="true"></span>
+        } @else {
+          <span class="status-dot" [class.status-error]="errorMessage" aria-hidden="true"></span>
+        }
+        <span>{{ statusMessage }}</span>
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-message" role="alert">{{ errorMessage }}</div>
+        <button type="button" class="retry-button" (click)="retryPathCalculation()">
+          Réessayer le calcul
+        </button>
+      }
+
+      @if (startNode !== null) {
+        <button
+          type="button"
+          class="retry-button"
+          [disabled]="isCalculating"
+          (click)="resetRoute()"
+        >
+          Nouveau trajet
+        </button>
+      }
+
+      <p class="footnote">
+        Nœuds numérotés de 1 à 12. Chaque liaison entre voisins a un coût de 1. Le backend calcule
+        le plus court chemin sans commander le robot.
+      </p>
+    </aside>
+  </section>
+</main>
